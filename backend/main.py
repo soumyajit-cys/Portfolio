@@ -1,16 +1,23 @@
-"""Portfolio AI backend: answers questions about Soumyajit using only knowledge.md."""
+"""Portfolio AI backend: answers questions about Soumyajit using only knowledge.md.
+
+Uses NVIDIA NIM (build.nvidia.com) through the OpenAI Python SDK.
+Secrets come only from environment variables -- never hardcoded.
+"""
 import collections
 import os
 import time
 from pathlib import Path
 
-from anthropic import AsyncAnthropic
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
-MODEL = os.getenv("MODEL", "claude-haiku-5-5")
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
+# No default model: model names change. Pick one at https://build.nvidia.com/models
+# (NIM catalog, e.g. an instruct chat model) and set MODEL to its exact ID.
+MODEL = os.getenv("MODEL", "")
 ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 PER_MIN = int(os.getenv("RATE_PER_MINUTE", "6"))
 PER_DAY = int(os.getenv("RATE_PER_DAY", "40"))
@@ -29,7 +36,17 @@ Rules:
 {KNOWLEDGE}
 </profile>"""
 
-client = AsyncAnthropic()  # reads ANTHROPIC_API_KEY from the environment
+if not NVIDIA_API_KEY:
+    raise RuntimeError("NVIDIA_API_KEY env var is required (get one at https://build.nvidia.com).")
+if not MODEL:
+    raise RuntimeError("MODEL env var is required. See exact model IDs at https://build.nvidia.com/models.")
+if not ORIGINS:
+    print("WARNING: ALLOWED_ORIGINS is empty -- browsers will block all cross-origin requests.")
+
+client = AsyncOpenAI(
+    base_url="https://integrate.api.nvidia.com/v1",
+    api_key=NVIDIA_API_KEY,
+)
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(
@@ -45,9 +62,11 @@ _day = {"date": "", "count": 0}
 
 
 def client_ip(req: Request) -> str:
-    # Behind one trusted proxy (Render, Railway, Fly) the LAST entry is the real client IP.
+    # X-Forwarded-For is "client, proxy1, proxy2" -- the FIRST entry is the real client.
     fwd = req.headers.get("x-forwarded-for")
-    return fwd.split(",")[-1].strip() if fwd else (req.client.host if req.client else "unknown")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return req.client.host if req.client else "unknown"
 
 
 def check_limits(ip: str) -> None:
@@ -80,19 +99,30 @@ async def health():
 
 @app.post("/ask")
 async def ask(body: Ask, request: Request):
+    question = body.question.strip()
+    if not question:
+        raise HTTPException(422, "Please ask a question about Soumyajit.")
     check_limits(client_ip(request))
 
     async def stream():
         try:
-            async with client.messages.stream(
+            resp = await client.chat.completions.create(
                 model=MODEL,
+                messages=[
+                    {"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": question},
+                ],
                 max_tokens=350,
-                system=SYSTEM,
-                messages=[{"role": "user", "content": body.question.strip()}],
-            ) as s:
-                async for text in s.text_stream:
-                    yield text
-        except Exception:
+                temperature=0.2,
+                stream=True,
+            )
+            async for chunk in resp:
+                delta = chunk.choices[0].delta.content if chunk.choices else None
+                if delta:
+                    yield delta
+        except Exception as e:
+            # Never include the API key or full traceback in the response.
+            print(f"ask error: {type(e).__name__}")
             yield "Sorry, I couldn't answer that right now. Please email soumyajitofficial98@gmail.com."
 
     return StreamingResponse(

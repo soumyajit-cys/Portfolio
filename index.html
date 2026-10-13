@@ -401,7 +401,7 @@ dialog#pj::backdrop{background:rgba(5,8,14,.6);backdrop-filter:blur(4px)}
 <footer><div class="wrap qrbox"><div class="qr"><svg viewBox="0 0 33 33" class="segno"><title>QR code: scan to email Soumyajit Dutta</title><path fill="#fff" d="M0 0h33v33h-33z"/><path class="qrline" stroke="#000" d="M2 2.5h7m1 0h3m1 0h1m2 0h1m2 0h3m1 0h7m-29 1h1m5 0h1m1 0h1m3 0h1m1 0h1m1 0h2m4 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m6 0h1m4 0h2m2 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h3m6 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m5 0h5m2 0h1m2 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m2 0h1m1 0h2m1 0h1m3 0h3m1 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-21 1h2m1 0h7m1 0h2m-21 1h1m1 0h2m1 0h3m1 0h1m1 0h1m1 0h5m1 0h1m2 0h1m2 0h1m1 0h2m-25 1h2m2 0h1m7 0h2m1 0h10m-29 1h3m1 0h3m1 0h1m1 0h2m2 0h1m1 0h2m8 0h2m-28 1h4m3 0h2m2 0h6m1 0h2m1 0h2m1 0h1m2 0h2m-28 1h2m2 0h5m1 0h2m2 0h1m1 0h3m3 0h1m1 0h4m-28 1h1m1 0h2m2 0h1m2 0h2m1 0h1m1 0h2m1 0h2m2 0h1m2 0h2m1 0h1m-29 1h1m2 0h1m2 0h1m3 0h1m1 0h1m1 0h1m1 0h1m2 0h1m3 0h1m1 0h1m1 0h2m-29 1h1m1 0h1m1 0h1m4 0h5m2 0h1m1 0h6m1 0h1m-25 1h1m1 0h1m1 0h2m1 0h1m6 0h1m1 0h2m1 0h2m1 0h2m-23 1h1m1 0h1m2 0h1m1 0h1m1 0h1m1 0h1m1 0h2m3 0h1m2 0h1m2 0h1m-27 1h1m3 0h1m1 0h2m7 0h1m2 0h1m2 0h6m-25 1h1m2 0h1m10 0h2m1 0h1m1 0h1m4 0h2m-27 1h1m3 0h2m4 0h3m1 0h10m1 0h2m-20 1h2m1 0h1m1 0h2m1 0h1m1 0h1m1 0h1m3 0h1m1 0h3m-29 1h7m1 0h4m1 0h1m2 0h1m1 0h3m1 0h1m1 0h1m2 0h1m-28 1h1m5 0h1m1 0h2m1 0h1m4 0h1m1 0h1m1 0h1m3 0h1m3 0h1m-29 1h1m1 0h3m1 0h1m5 0h1m1 0h1m2 0h1m2 0h7m-27 1h1m1 0h3m1 0h1m1 0h9m2 0h1m1 0h1m2 0h1m1 0h1m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h4m6 0h1m1 0h2m1 0h1m2 0h1m1 0h1m-29 1h1m5 0h1m2 0h1m2 0h2m1 0h1m4 0h1m2 0h1m1 0h1m1 0h1m-28 1h7m1 0h6m4 0h3m3 0h1m2 0h1"/></svg></div><p><b>Scan to email me</b><br>Point your phone camera at the code to start a message to soumyajitofficial98@gmail.com.</p></div>
   <div class="wrap">&copy; 2026 Soumyajit Dutta</div></footer>
 
-<script>/* After deploying the backend, set this to e.g. "https://your-api.onrender.com/ask" */window.ASK_API_URL="";</script>
+<script>/* Set this to "https://api.MYDOMAIN.com/ask" after deploying the backend */window.ASK_API_URL="";</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
 <script>
 (function(){
@@ -545,14 +545,24 @@ dialog#pj::backdrop{background:rgba(5,8,14,.6);backdrop-filter:blur(4px)}
   var API=window.ASK_API_URL||'';
   async function askAI(q){
     if(!q){pr('Usage: ask <question about Soumyajit>');return}
-    if(!API){pr('The AI assistant is not connected yet. Try help.');return}
-    var d=document.createElement('div');d.textContent='Thinking...';out.appendChild(d);
+    if(q.length>300){pr('Please keep your question under 300 characters.');return}
+    if(!API){pr('The AI assistant is not connected yet. Email soumyajitofficial98@gmail.com instead.');return}
+    var d=document.createElement('div');d.textContent='Thinking...';out.appendChild(d);out.scrollTop=out.scrollHeight;
     try{
       var r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
-      if(!r.ok){var j={};try{j=await r.json()}catch(e){}d.textContent=j.detail||'Could not get an answer. Please try again later.';return}
+      if(!r.ok){
+        var msg='Could not get an answer. Please try again later.';
+        if(r.status===429)msg='Too many questions. Please wait a minute and try again.';
+        else if(r.status===503)msg='The assistant has reached its daily limit. Please email soumyajitofficial98@gmail.com.';
+        else if(r.status===422)msg='Please ask a shorter question (under 300 characters).';
+        else{try{var je=await r.json();if(typeof je.detail==='string'&&je.detail)msg=je.detail;}catch(e){}}
+        d.textContent=msg;out.scrollTop=out.scrollHeight;return;
+      }
+      if(!r.body||!r.body.getReader){var tx=await r.text();d.textContent=tx||'Sorry, I got an empty answer. Please email soumyajitofficial98@gmail.com.';out.scrollTop=out.scrollHeight;return;}
       var rd=r.body.getReader(),dec=new TextDecoder(),txt='';
       for(;;){var x=await rd.read();if(x.done)break;txt+=dec.decode(x.value,{stream:true});d.textContent=txt;out.scrollTop=out.scrollHeight}
-    }catch(e){d.textContent='Could not reach the assistant. Please try again later.'}
+      if(!txt)d.textContent='Sorry, I got an empty answer. Please email soumyajitofficial98@gmail.com.';
+    }catch(e){d.textContent='Could not reach the assistant. Check your connection, or email soumyajitofficial98@gmail.com.';out.scrollTop=out.scrollHeight;}
   }
   var names=cards.map(function(c){return c.querySelector('h3').textContent.trim()});
   var C={
